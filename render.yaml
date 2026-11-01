@@ -1,0 +1,35 @@
+services:
+  - type: web
+    name: netcoopai-campus-map
+    runtime: python
+    plan: free
+    rootDir: iitbbs-3d-network
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    healthCheckPath: /api/buildings
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+
+  # Consumes telemetry from Redis Streams and asks the API to process it
+  - type: worker
+    name: netcoopai-telemetry-worker
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m backend.worker
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: REDIS_URL
+        sync: false
+      - key: BACKEND_URL
+        value: https://netcoopai.onrender.com
+      - key: INTERNAL_TOKEN
+        sync: false
+      - key: TELEMETRY_STREAM
+        value: netcoop:telemetry
+      - key: TELEMETRY_CONSUMER_GROUP
+        value: netcoop-workers
+      - key: WORKER_MAX_DELIVERIES
+        value: "5"
